@@ -284,11 +284,11 @@ function generatePDF(data){
             `Current: ${e.current}`,
             `Previous: ${e.previous}`,
             `Units: ${units}`,
-            `Per Unit Rate: ${e.factor}`,
+            `Per Unit Rate: Rs. ${e.factor}`,
             `Water: ${e.water}`,
             `Rent: ${e.rent}`,
             `Formula = ${units} × ${e.factor} + ${e.water} + ${e.rent}`,
-            `Total: ₹${e.total}`
+            `Total: Rs. ${e.total}`
         ];
 
         let wrappedLines = [];
