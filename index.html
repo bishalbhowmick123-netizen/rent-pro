@@ -273,33 +273,54 @@ function generatePDF(data){
     let doc = new jsPDF();
 
     let x = 10, y = 10;
-    let boxW = 90, boxH = 70;
+    let boxW = 90;
+    let padding = 4;
 
-    data.forEach((e, i) => {
+    data.forEach((e) => {
+
         let units = e.current - e.previous;
 
-        doc.rect(x, y, boxW, boxH);
-
-        doc.setFont("helvetica", "bold");
-        doc.text(e.name, x + boxW/2, y + 8, { align: "center" });
-
-        doc.setFont("helvetica", "normal");
-
-        let text = [
-           `Current: ${e.current}`,
-           `Previous: ${e.previous}`,
-           `Units: ${units}`,
-           `Per Unit Rate: ${e.factor}`,
-           `Water: ${e.water}`,
-           `Rent: ${e.rent}`,
-           `Formula = ${units} × ${e.factor} + ${e.water} + ${e.rent}`,
-           `Total: ₹${e.total}`
+        // Build text content
+        let lines = [
+            `Current: ${e.current}`,
+            `Previous: ${e.previous}`,
+            `Units: ${units}`,
+            `Per Unit Rate: ${e.factor}`,
+            `Water: ${e.water}`,
+            `Rent: ${e.rent}`,
+            `Formula = ${units} × ${e.factor} + ${e.water} + ${e.rent}`,
+            `Total: ₹${e.total}`
         ];
-        
-        text.forEach((t, idx)=>{
-            doc.text(t, x + 4, y + 15 + (idx*6));
+
+        // Wrap long lines (important for formula)
+        let wrappedLines = [];
+        lines.forEach(line => {
+            let split = doc.splitTextToSize(line, boxW - 8);
+            wrappedLines.push(...split);
         });
 
+        // Calculate dynamic height
+        let lineHeight = 6;
+        let boxH = 12 + (wrappedLines.length * lineHeight);
+
+        // Draw box
+        doc.rect(x, y, boxW, boxH);
+
+        // Tenant name (centered + bold)
+        doc.setFont("helvetica", "bold");
+        doc.text(e.name.toUpperCase(), x + boxW/2, y + 8, { align: "center" });
+
+        // Normal text
+        doc.setFont("helvetica", "normal");
+
+        let textY = y + 14;
+
+        wrappedLines.forEach(line => {
+            doc.text(line, x + padding, textY);
+            textY += lineHeight;
+        });
+
+        // Move to next box
         x += boxW + 10;
 
         if(x > 180){
@@ -307,6 +328,7 @@ function generatePDF(data){
             y += boxH + 10;
         }
 
+        // New page if needed
         if(y > 260){
             doc.addPage();
             x = 10;
@@ -316,7 +338,7 @@ function generatePDF(data){
 
     doc.save("rent_report.pdf");
 }
-
+    
 function exportPDFCurrent(){
     generatePDF(dataStore.filter(e=>e.month===selectedMonth.value));
 }
