@@ -286,16 +286,16 @@ function generatePDF(data){
         doc.setFont("helvetica", "normal");
 
         let text = [
-            `Current: ${e.current}`,
-            `Previous: ${e.previous}`,
-            `Units: ${units}`,
-            `Rate: ${e.factor}`,
-            `Water: ${e.water}`,
-            `Rent: ${e.rent}`,
-            `Formula: (${e.current}-${e.previous})*${e.factor}+${e.water}+${e.rent}`,
-            `Total: ₹${e.total}`
+           `Current: ${e.current}`,
+           `Previous: ${e.previous}`,
+           `Units: ${units}`,
+           `Per Unit Rate: ${e.factor}`,
+           `Water: ${e.water}`,
+           `Rent: ${e.rent}`,
+           `Formula = ${units} × ${e.factor} + ${e.water} + ${e.rent}`,
+           `Total: ₹${e.total}`
         ];
-
+        
         text.forEach((t, idx)=>{
             doc.text(t, x + 4, y + 15 + (idx*6));
         });
