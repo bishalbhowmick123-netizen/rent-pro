@@ -267,7 +267,7 @@ function loadChart(){
     });
 }
 
-/* PDF EXPORT */
+/* FIXED PDF EXPORT */
 function generatePDF(data){
     const { jsPDF } = window.jspdf;
     let doc = new jsPDF();
@@ -280,7 +280,6 @@ function generatePDF(data){
 
         let units = e.current - e.previous;
 
-        // Build text content
         let lines = [
             `Current: ${e.current}`,
             `Previous: ${e.previous}`,
@@ -292,25 +291,20 @@ function generatePDF(data){
             `Total: ₹${e.total}`
         ];
 
-        // Wrap long lines (important for formula)
         let wrappedLines = [];
         lines.forEach(line => {
             let split = doc.splitTextToSize(line, boxW - 8);
             wrappedLines.push(...split);
         });
 
-        // Calculate dynamic height
         let lineHeight = 6;
         let boxH = 12 + (wrappedLines.length * lineHeight);
 
-        // Draw box
         doc.rect(x, y, boxW, boxH);
 
-        // Tenant name (centered + bold)
         doc.setFont("helvetica", "bold");
         doc.text(e.name.toUpperCase(), x + boxW/2, y + 8, { align: "center" });
 
-        // Normal text
         doc.setFont("helvetica", "normal");
 
         let textY = y + 14;
@@ -320,7 +314,6 @@ function generatePDF(data){
             textY += lineHeight;
         });
 
-        // Move to next box
         x += boxW + 10;
 
         if(x > 180){
@@ -328,7 +321,6 @@ function generatePDF(data){
             y += boxH + 10;
         }
 
-        // New page if needed
         if(y > 260){
             doc.addPage();
             x = 10;
@@ -338,7 +330,7 @@ function generatePDF(data){
 
     doc.save("rent_report.pdf");
 }
-    
+
 function exportPDFCurrent(){
     generatePDF(dataStore.filter(e=>e.month===selectedMonth.value));
 }
