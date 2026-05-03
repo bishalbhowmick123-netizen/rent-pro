@@ -1,4 +1,4 @@
-const CACHE_NAME = "rent-pro-v2";
+const CACHE_NAME = "rent-pro-v3";
 
 self.addEventListener("install", e => {
     e.waitUntil(
