@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rent Pro</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    font-family: -apple-system;
+    background: #0f172a;
+    color: white;
+    margin: 0;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+    padding: 15px;
+}
+
+.card {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 15px;
+}
+
+.inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+input {
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    width: 100px;
+}
+
+#tenantName {
+    width: 100%;
+}
+
+.factor-buttons button {
+    margin-top: 4px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    background: #38bdf8;
+}
+
+.result {
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+button {
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    margin-top: 8px;
+}
+
+.record-item {
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.record-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+}
+
+.small-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+canvas {
+    background: white;
+    border-radius: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card" style="text-align:center;">
+    <label>Select Month:</label><br>
+    <input type="month" id="selectedMonth">
+</div>
+
+<div class="card">
+    <input id="tenantName" placeholder="Tenant Name">
+
+    <div class="inputs">
+        <input id="current" type="number" placeholder="Current">
+        <input id="previous" type="number" placeholder="Previous">
+
+        <div>
+            <input id="factor" placeholder="Factor" readonly>
+            <div class="factor-buttons">
+                <button onclick="setFactor(9)">9</button>
+                <button onclick="setFactor(10)">10</button>
+                <button onclick="setFactor(11)">11</button>
+            </div>
+        </div>
+
+        <input id="water" type="number" placeholder="Water">
+        <input id="rent" type="number" placeholder="Rent">
+    </div>
+
+    <div class="result">₹ <span id="total">0</span></div>
+    <button onclick="saveData()">Save</button>
+</div>
+
+<div class="card" style="text-align:center;">
+    <button onclick="exportCurrentMonth()">Export Current</button><br>
+    <input type="month" id="start">
+    <input type="month" id="end">
+    <button onclick="exportCustom()">Custom Export</button>
+</div>
+
+<div class="card">
+    <canvas id="chart"></canvas>
+</div>
+
+<div class="card">
+    <h3>Records</h3>
+    <div id="records"></div>
+</div>
+
+</div>
+
+<script>
+let dataStore = JSON.parse(localStorage.getItem("tenantRentData")) || [];
+let chart;
+
+const selectedMonth = document.getElementById("selectedMonth");
+
+// Default month
+selectedMonth.value = new Date().toISOString().slice(0,7);
+
+// Month change
+selectedMonth.addEventListener("change", () => {
+    clearInputs();
+    loadRecords();
+});
+
+function setFactor(v){
+    factor.value = v;
+    calculate();
+}
+
+document.querySelectorAll("input").forEach(i=>{
+    i.addEventListener("input", calculate);
+});
+
+function calculate(){
+    let total = ((+current.value||0)-(+previous.value||0))*(+factor.value||0)
+        +(+water.value||0)+(+rent.value||0);
+
+    document.getElementById("total").innerText = total.toFixed(2);
+}
+
+function clearInputs(){
+    tenantName.value="";
+    current.value="";
+    previous.value="";
+    factor.value="";
+    water.value="";
+    rent.value="";
+    total.innerText="0";
+}
+
+function saveData(){
+    let name = tenantName.value.trim();
+    if(!name) return alert("Enter tenant name");
+
+    dataStore.push({
+        id: Date.now(),
+        name,
+        current:+current.value||0,
+        previous:+previous.value||0,
+        factor:+factor.value||0,
+        water:+water.value||0,
+        rent:+rent.value||0,
+        total:+total.innerText,
+        month:selectedMonth.value
+    });
+
+    localStorage.setItem("tenantRentData", JSON.stringify(dataStore));
+
+    loadRecords();
+    loadChart();
+    clearInputs();
+}
+
+function deleteEntry(id){
+    dataStore = dataStore.filter(e=>e.id!==id);
+    localStorage.setItem("tenantRentData", JSON.stringify(dataStore));
+    loadRecords();
+    loadChart();
+}
+
+function editEntry(id){
+    let e = dataStore.find(x=>x.id===id);
+    let val = prompt("Edit total:", e.total);
+    if(val!==null){
+        e.total = +val;
+        localStorage.setItem("tenantRentData", JSON.stringify(dataStore));
+        loadRecords();
+        loadChart();
+    }
+}
+
+function loadRecords(){
+    let div = document.getElementById("records");
+    div.innerHTML = "";
+
+    let filtered = dataStore.filter(e=>e.month===selectedMonth.value);
+
+    filtered.slice().reverse().forEach(e=>{
+        div.innerHTML += `
+        <div class="record-item">
+            <div class="record-header">
+                <span>${e.name}</span>
+                <span>₹${e.total}</span>
+            </div>
+            <div>
+                <button class="small-btn" onclick="editEntry(${e.id})">Edit</button>
+                <button class="small-btn" onclick="deleteEntry(${e.id})">Delete</button>
+            </div>
+        </div>`;
+    });
+}
+
+function loadChart(){
+    let monthly = {};
+    dataStore.forEach(e=>{
+        if(!monthly[e.month]) monthly[e.month]=0;
+        monthly[e.month]+=e.total;
+    });
+
+    let labels = Object.keys(monthly).sort();
+    let values = labels.map(l=>monthly[l]);
+
+    if(chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("chart"), {
+        type:"line",
+        data:{ labels, datasets:[{ data:values }] }
+    });
+}
+
+function downloadCSV(data){
+    let csv="";
+    data.forEach(e=>{
+        csv += `Tenant: ${e.name}\n`;
+        csv += `Current,${e.current}\n`;
+        csv += `Previous,${e.previous}\n`;
+        csv += `Factor,${e.factor}\n`;
+        csv += `Water,${e.water}\n`;
+        csv += `Rent,${e.rent}\n`;
+        csv += `Formula,(${e.current}-${e.previous})*${e.factor}+${e.water}+${e.rent}\n`;
+        csv += `Total,₹${e.total}\n\n------------------\n\n`;
+    });
+
+    let blob = new Blob([csv]);
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "rent.csv";
+    a.click();
+}
+
+function exportCurrentMonth(){
+    downloadCSV(dataStore.filter(e=>e.month===selectedMonth.value));
+}
+
+function exportCustom(){
+    let s=start.value;
+    let e=end.value;
+    downloadCSV(dataStore.filter(x=>x.month>=s && x.month<=e));
+}
+
+loadRecords();
+loadChart();
+
+// PWA
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js');
+}
+</script>
+
+</body>
+</html>
